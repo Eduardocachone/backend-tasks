@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const task_routes_1 = require("./routes/task.routes");
+const user_routes_1 = require("./routes/user.routes");
+const dotenv_1 = require("dotenv");
+(0, dotenv_1.config)();
+const express = require('express');
+const app = express();
+app.use(express.json());
+app.use('/user', user_routes_1.userRouter);
+app.use('/task', task_routes_1.taskRouter);
+app.listen(4000);
