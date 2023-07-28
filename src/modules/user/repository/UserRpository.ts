@@ -54,7 +54,7 @@ class UserRepository {
                      const token = sign({
                          id: results[0].user_id,
                          email: results[0].email
-                     }, process.env.SECRET as string, {expiresIn: "1d"})
+                     }, process.env.SECRET as string, {expiresIn: "365d"})
 
                      return response.status(200).json({token:token , massage:'Autemticação comcluida com suceso'});
                     }
@@ -74,36 +74,25 @@ class UserRepository {
         const decode:any = verify(token, process.env.SECRET as string);
         if (decode.email) {
             pool.getConnection((error, conn) => {
-                conn.query(
-                    'SELECT * FROM user WHERE email=?',
-                    [decode.email],
-                    (error, resultado, fields) => {
-                        conn.release();
+            conn.query(
+                'SELECT * FROM user WHERE email=?',
+                [decode.email],
+                (error, resultado, fields) => {
+                    conn.release();
 
-                        if (resultado.length === 0) {
-                            return response.status(404).send({ message: 'Usuário não encontrado' });
-                          }
-
-                        if (error) {
-                            return response.status(400).send({
-                                error: error,
-                                response: null
-                            });
+                    if (resultado.length === 0) {
+                        return response.status(404).send({ message: 'Usuário não encontrado' });
                         }
 
-                        return response.status(200).send({
-                            user: {
-                                nome: resultado[0].name,
-                                email: resultado[0].email,
-                                id: resultado[0].user_id,
-                            }
-                        });
-                    }
-                );
-            });
+                        const userData = resultado[0];
+                        response.status(200).json(userData);
+                    });
+                }
+            );
+        };
             
-        }
     }
+    
 
     update(request: Request, response: Response) { 
         const {name, email, password } = request.body;
@@ -137,44 +126,39 @@ class UserRepository {
     delete(request: Request, response: Response) {
         const token = request.headers && request.headers.authorization;
         if (!token) {
-            return response.status(401).json({ message: 'Token não encontrado!' });
+          return response.status(401).json({ message: 'Token não encontrado!' });
         }
-        const decode:any = verify(token, process.env.SECRET as string);
+        const decode: any = verify(token, process.env.SECRET as string);
         if (decode.id) {
-        pool.getConnection((err: any, connection: any) => {
-          if (err) {
-            return response.status(500).json(err);
-          }
-        
-
-          connection.query(
-            'DELETE FROM tasks WHERE user_user_id = ?',
-            [decode.id],
-            (error: any, result: any, fields: any) => {
-              connection.release();
-              if (error) {
-                return response.status(400).json(error);
-              }
-              response.status(200).json({ message: 'Usuário deletado com sucesso' });
+          pool.getConnection((err: any, connection: any) => {
+            if (err) {
+              return response.status(500).json(err);
             }
-            );
-    
-              connection.query(
-                'DELETE FROM user WHERE user_id = ?',
-                [decode.id],
-                (error: any, result: any, fields: any) => {
+            connection.query(
+              'DELETE FROM tasks WHERE user_user_id = ?',
+              [decode.id],
+              (error: any, result: any, fields: any) => {
+                if (error) {
                   connection.release();
-                  if (error) {
-                    return response.status(400).json(error);
-                  }
-                  response.status(200).json({ message: 'Usuário deletado com sucesso' });
+                  return response.status(400).json(error);
                 }
-              );
-            }
-          );
-
-        };
-    }
+                connection.query(
+                  'DELETE FROM user WHERE user_id = ?',
+                  [decode.id],
+                  (error: any, result: any, fields: any) => {
+                    connection.release();
+                    if (error) {
+                      return response.status(400).json(error);
+                    }
+                    response.status(200).json({ message: 'Usuário deletado com sucesso' });
+                  }
+                );
+              }
+            );
+          });
+        }
+      }
+      
 }
 
 

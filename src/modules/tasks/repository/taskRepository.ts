@@ -23,36 +23,47 @@ class TaskRepository {
               (error: any, result: any, fields: any) => {
                 connection.release();
                 if (error) {
-                  return response.status(400).json({ error: "ERRO" });
-                }
-      
-                connection.query(
-                  'SELECT * FROM tasks WHERE tasks_id = ? AND user_user_id = ?',
-                  [taskId, decode.id],
-                  (error: any, result: any, fields: any) => {
-                    if (error) {
-                      return response.status(400).json({ error: "ERRO" });
-                    }
-                    if (result.length === 0) {
-                      return response.status(404).json({ error: "Tarefa não encontrada" });
-                    }
-                    const taskData = result[0];
-                    response.status(200).json(taskData);
-                  }
-                );
+                  return response.status(400).json(error);
+               }
+               response.status(200).json({massage:'task criado com suceso'});
               }
             );
           });
         }
-      }
+    }
+    
+    getTasks(request: Request, response: Response) {
+      const token = request.headers && request.headers.authorization;
+      if (!token) {
+          return response.status(401).json({ message: 'Token não encontrado!' });
+        }
+        const decode: any = verify(token, 'segredo' as string);
+        if (decode.id) {
+          pool.getConnection((error, connection) => {
+      
+            connection.query(
+              'SELECT * FROM tasks WHERE user_user_id = ?',
+              [decode.id],
+              (error: any, results: any, fields: any) => {
+                connection.release();
+                if (error) {
+                console.error('Erro ao executar consulta: ', error);
+                return response.status(400).json({ error: 'Erro na sua autenticação!' });
+              }
+              return response.status(200).json({ massage:'tasks retornados com suceso',tasks:results});
+              }
+            );
+          });
+        }
+    }
 
     updateTask(request: Request, response: Response) {
-        const { title, description,taskId } = request.body;
+        const { title, description,tasks_id } = request.body;
 
           pool.getConnection((error, connection) => {
             connection.query(
               'UPDATE tasks SET title = ?, description = ? WHERE tasks_id = ?',
-              [title, description, taskId],
+              [title, description, tasks_id],
               (error: any, result: any, fields: any) => {
                 connection.release();
                 if (error) {
@@ -68,7 +79,7 @@ class TaskRepository {
     }
 
     delete(request: Request, response: Response) {
-        const {taskId} = request.body;
+        const {tasks_id} = request.body;
            
             pool.getConnection((err: any, connection: any) => {
               if (err) {
@@ -77,7 +88,7 @@ class TaskRepository {
           
               connection.query(
                 'DELETE FROM tasks WHERE tasks_id = ?',
-                [taskId],
+                [tasks_id],
                 (error: any, result: any, fields: any) => {
                   connection.release();
                   if (error) {

@@ -9,6 +9,10 @@ taskRouter.post('/create/task', login, (request , response) => {
     taskRepository.createTask(request,response)
 })
 
+taskRouter.get('/get/task', login, (request , response) => {
+    taskRepository.getTasks(request,response)
+})
+
 taskRouter.put('/update/task', (request , response) => {
     taskRepository.updateTask(request,response)
 })
